@@ -11,7 +11,7 @@ from gymnasium import spaces
 
 
 class BanditParams:
-    """Parameters for the k-armed BanditEnv environment."""
+    '''Parameters for the k-armed BanditEnv environment.'''
     # TODO add missing params for initial q-values (uniform, randint from range)
     # and draw logic (constant or from a probability distribution with
     #  mean = initial q-values and std)
@@ -27,28 +27,30 @@ class BanditParams:
         self.qdrift_std = qdrift_std
         self.stationary = stationary
 
+        # print("Bandit configuration\n--------------------")
+        # print(*[f"{key}: {value}" for key, value in self.__dict__.items()], sep="\n")
+    
+    def print_bandit_params(self):
+        print("Bandit configuration\n--------------------")
+        print(*[f"{key}: {value}" for key, value in self.__dict__.items()], sep="\n")
 
-class BanditEnv(gym.Env):
-    def __init__(self, params: BanditParams = BanditParams()):
+
+class BanditEnv(gym.Env, BanditParams):
+    '''docstring'''
+
+    metadata = {"render_modes": ["human"], "render_fps": 4}
+    
+    def __init__(self, render_mode=None):
         super().__init__()
-        
-        # Assign all attributes from params to the BanditEnv instance
-        for key, value in params.__dict__.items():
-            setattr(self, key, value)
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
 
 
 if __name__ == '__main__':
     # The output in the terminal will indicate whether tests passed or failed.
     # TODO: add the gymnasium env self test
-
-    env_params = BanditParams(arms=6, qdrift_mean=0.5)
-    for key, value in env_params.__dict__.items():
-        print(f'{key}:{value}')
-
-    env = BanditEnv(env_params)
-    print(env.arms)  # Should print 6
-    print(env.qdrift_mean)  # Should print 0.5
-
     env = BanditEnv()
-    print(env.arms)  # Should print 10
-    print(env.qdrift_mean)  # Should print 0.
+    env.print_bandit_params()
+    env.arms = 6
+    env.print_bandit_params()
