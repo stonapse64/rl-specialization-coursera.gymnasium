@@ -1,42 +1,47 @@
-'''Figure 2.1: An example bandit problem from the 10-armed testbed. The true value q⇤(a) of
-each of the ten actions was selected according to a normal distribution with mean zero and unit
-variance, and then the actual rewards were selected according to a mean q⇤(a), unit-variance
-normal distribution, as suggested by these gray distributions.'''
+import gymnasium as gym
+from gymnasium import spaces
+from gymnasium.utils.env_checker import check_env
 
-import matplotlib.pyplot as plt
-import numpy as np
+class MyEmptyObsEnv(gym.Env):
+    def __init__(self):
+        super().__init__()
+        self.observation_space = spaces.Dict({})  # Or just spaces.Dict()
+        self.action_space = spaces.Discrete(2)  # Example action space
 
-# Generate the data
-arms = 10
-arms_q_values = np.random.normal(0, 1, arms)
-timesteps = 10000
-arms_values_over_time = np.zeros(timesteps)
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        return {}, {}  # Fixed: Standard dictionaries
 
-arm = np.min(arms_q_values)
-for i in range(timesteps):
-    arms_values_over_time[i] = np.random.normal(arm, 1)
+    def step(self, action):
+        # ... environment logic ...
+        reward = 0  # Calculate the reward
+        terminated = False  # Determine if the episode is terminated
+        truncated = False # Determine if the episode is truncated (e.g., due to a timeout)
+        info = {}  # Any additional information
 
-# Create a violin plot based on the data in arms_values_over_time
-plt.violinplot(arms_values_over_time)
-plt.title('Violin Plot of Arms Values Over Time')
-plt.xlabel('Arms')
-plt.ylabel('Values')
+        return {}, reward, terminated, truncated, {}  # Fixed: Standard dictionary
 
-# Calculate the mean of the distribution
-mean_value = np.mean(arms_values_over_time)
+    def render(self):
+      # ... render the environment (optional)
+      pass
 
-# Add a shorter marker/error line for the mean of the distribution
-plt.axhline(mean_value, color='r', linestyle='--', linewidth=1, xmin=0.45, xmax=0.55)
+    def close(self):
+        # ... any cleanup ...
+        pass
 
-# Get the current axis
-ax = plt.gca()
 
-# Get the right end of the error line
-xmax = ax.get_xlim()[1] * 0.55
-print (xmax, ax.get_xlim()[1])
+# Example usage:
+env = MyEmptyObsEnv()
+observation, info = env.reset()
+print(f"Initial observation: {observation}") # Output will be {}
 
-# Add text relative to the right end of the error line
-plt.text(1.45 * xmax + 0.02 * ax.get_xlim()[1], mean_value, f'q({np.argmin(arms_q_values)})', color='r', verticalalignment='center')
+action = env.action_space.sample()
+observation, reward, terminated, truncated, info = env.step(action)
+print(f"Observation after step: {observation}") # Output will be {}
 
-# Show the plot
-plt.show()
+
+ # using the gymnasium check_env, a set of functions for checking an environment implementation. 
+ # Source: https://gymnasium.farama.org/_modules/gymnasium/utils/env_checker/
+check_env(env = env)
+
+env.close()
