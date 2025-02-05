@@ -8,7 +8,15 @@ from typing import NamedTuple, Optional, Tuple, Union
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
+from gymnasium.envs.registration import register
 from gymnasium.utils.env_checker import check_env
+import pygame
+
+# Register this module as a gym environment. Once registered, the id is usable in gym.make().
+register(
+    id='BanditEnv-v0',                                # call it whatever you want
+    entry_point='karmedbandit:BanditEnv', # module_name:class_name
+)
 
 
 class BanditParams:
@@ -19,26 +27,26 @@ class BanditParams:
         bandit_actions: int = 10,
         true_q_value_mean = 0.5, # for a specific initial q-value set this to the value of choice otherwise use mean = 0
         true_q_value_std = 0., # for a uniform initial q-value set this to zero otherwise use e.g., std = 1.
-        q_value_std = 1.0, # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
-        qdrift_mean: float = 0.0, # for a stationary problem set this to zero
-        qdrift_std: float = 0.0, # for a stationary problem set this to zero else use e.g. std = 0.1 for a light drift
-        random_seed: int = 42,
+        q_value_std = 0.1, # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
+        q_drift_mean: float = 0.0, # for a stationary problem set this to zero
+        q_drift_std: float = 0., # for a stationary problem set this to zero else use e.g. std = 0.1 for a light drift
+        random_seed: int = None,
 
     ):
         self.bandit_actions = bandit_actions
         self.true_q_value_mean = true_q_value_mean
         self.true_q_value_std = true_q_value_std
         self.q_value_std = q_value_std
-        self.qdrift_mean = qdrift_mean
-        self.qdrift_std = qdrift_std
+        self.q_drift_mean = q_drift_mean
+        self.q_drift_std = q_drift_std
         self.random_seed = random_seed
 
-        # print("Bandit configuration\n--------------------")
-        # print(*[f"{key}: {value}" for key, value in self.__dict__.items()], sep="\n")
+        self.print_bandit_params()
     
     def print_bandit_params(self):
-        print("Bandit configuration\n--------------------")
+        print("-"*25+"\nBandit configuration\n"+"-"*25)
         print(*[f"{key}: {value}" for key, value in self.__dict__.items()], sep="\n")
+        print("-"*25)
 
 
 class BanditEnv(gym.Env, BanditParams):
@@ -52,7 +60,7 @@ class BanditEnv(gym.Env, BanditParams):
         # Create an instance of the numpy random generator so that we can seed
         # it for the use in this class without side effects to other parts of 
         # our code or libraries
-        self.rng = np.random.default_rng(seed=self.random_seed)
+        # self.rng = np.random.default_rng(seed=self.random_seed)
 
         # observation and action space of the BanditEnv
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.bandit_actions,), dtype=np.float64)
@@ -77,7 +85,8 @@ class BanditEnv(gym.Env, BanditParams):
         self.clock = None
 
     def reset(self, seed=None, options=None):
-        super().reset(seed=seed)
+        self.rng = np.random.default_rng(seed=self.random_seed)
+        super().reset(seed=seed)        
 
         # set the true and intial q-values of the bandit.actions bandit arms
         self.arms_true_q_values = self.rng.normal(
@@ -98,6 +107,7 @@ class BanditEnv(gym.Env, BanditParams):
     def step(self, action):
         assert action in self.action_space
 
+        # compute step arms_q_values based on bandit's configuration
         self.arms_q_values = np.array([
             self.rng.normal(loc=true_q, scale=self.q_value_std)
             for true_q in self.arms_true_q_values
@@ -114,22 +124,24 @@ class BanditEnv(gym.Env, BanditParams):
         return observation, reward, terminated, truncated, info
     
     def render(self):
+      # TODO implement render logic
       # ... render the environment (optional)
       pass
 
     def close(self):
+        # TODO implement close logic
         # ... any cleanup ...
-        pass
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
 
     def _q_drift(self):
-        # TODO: implement true logic
         """
         Updates the bandit with drift for a non-stationary problem.
         """
         # exemplary code from old bandit class
-        # if not self.stationary:
-        #     increments = np.random.normal(self.q_drift_mean, self.q_drift_std_dev, self.arms.shape)
-        #     self.arms += increments
+        increments = self.rng.normal(loc=self.q_drift_mean, scale=self.q_drift_std, size=self.bandit_actions)
+        self.arms_true_q_values += increments
 
     def _get_obs(self):
         observation = self.arms_q_values
@@ -140,25 +152,29 @@ class BanditEnv(gym.Env, BanditParams):
 
 
 if __name__ == '__main__':
-    # The output in the terminal will indicate whether tests passed or failed.
+
+    # TODO implement proper registration and gym.make()
+    # register(id="BanditEnv-v0", entry_point="k-armed-bandit:BanditEnv",)
+    # gym.make("BanditEnv-v0")
+
+    # HACK
     env = BanditEnv()
-    # XXX info: gymnasium env self test. Run as required. 
+    
+    # XXX info: gymnasium env self test. Run as required.
     # The output in the terminal will indicate whether tests passed or failed.
     # check_env(env = env)
 
     print(env.true_q_value_mean)
-
     obs, info = env.reset()
-
     print("Initial arms_q_values:", env.arms_true_q_values)
-    print ("#"*20)
-
-    for _ in range(10):  # Perform some steps
+    print ("#"*79)
+    for _ in range(10_000):  # Perform some steps
         action = env.action_space.sample() #Example
         obs, reward, terminated, truncated, info = env.step(action)
-        print("Updated arms_q_values:", np.round(env.arms_q_values, 3))
+    
+    print("Updated arms_q_values:", np.round(env.arms_q_values, 3))
 
-    # env.print_bandit_params()
+    env.close()
 
 
 
