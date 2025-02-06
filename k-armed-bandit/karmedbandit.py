@@ -13,10 +13,8 @@ from gymnasium.utils.env_checker import check_env
 import pygame
 
 # Register this module as a gym environment. Once registered, the id is usable in gym.make().
-register(
-    id='BanditEnv-v0',                                # call it whatever you want
-    entry_point='karmedbandit:BanditEnv', # module_name:class_name
-)
+# id is for use with gym.make('id'), entry_point is 'file name:class name env'
+register(id='BanditEnv-v0', entry_point='karmedbandit:BanditEnv',)
 
 
 class BanditParams:
@@ -70,6 +68,9 @@ class BanditEnv(gym.Env, BanditParams):
         self.arms_true_q_values = np.zeros(self.bandit_actions)
         self.arms_q_values = np.zeros(self.bandit_actions)
 
+        # 
+        self.timesteps = 0
+
         """
         If human-rendering is used, `self.window` will be a reference
         to the window that we draw to. `self.clock` will be a clock that is used
@@ -86,7 +87,13 @@ class BanditEnv(gym.Env, BanditParams):
 
     def reset(self, seed=None, options=None):
         self.rng = np.random.default_rng(seed=self.random_seed)
-        super().reset(seed=seed)        
+        super().reset(seed=seed)    
+
+        # set the counter for the episode length. We need this for the 
+        # gym.wrappers.RecordEpisodeStatistic because stats recording is 
+        # triggered by the terminate / truncated status of the env.
+        assert isinstance(options, int)
+        self.timesteps = options    
 
         # set the true and intial q-values of the bandit.actions bandit arms
         self.arms_true_q_values = self.rng.normal(
@@ -113,9 +120,12 @@ class BanditEnv(gym.Env, BanditParams):
             for true_q in self.arms_true_q_values
         ])
 
+        # count down the remaining episode length
+        self.timesteps -= 1
+
         observation = self._get_obs()
         reward = self.arms_q_values[action]
-        terminated = False  # Determine if the episode is terminated
+        terminated = True if self.timesteps <= 0 else False  # Determine if the episode is terminated
         truncated = False # Determine if the episode is truncated (e.g., due to a timeout)
         info = self._get_info()  # Any additional information
 
