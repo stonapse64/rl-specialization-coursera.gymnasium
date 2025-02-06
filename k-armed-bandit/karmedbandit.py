@@ -68,8 +68,9 @@ class BanditEnv(gym.Env, BanditParams):
         self.arms_true_q_values = np.zeros(self.bandit_actions)
         self.arms_q_values = np.zeros(self.bandit_actions)
 
-        # 
-        self.timesteps = 0
+        # Variables to store and communicate the agents efficiency
+        self.step_error = 0.
+        self.optimal_action = False
 
         """
         If human-rendering is used, `self.window` will be a reference
@@ -87,13 +88,7 @@ class BanditEnv(gym.Env, BanditParams):
 
     def reset(self, seed=None, options=None):
         self.rng = np.random.default_rng(seed=self.random_seed)
-        super().reset(seed=seed)    
-
-        # set the counter for the episode length. We need this for the 
-        # gym.wrappers.RecordEpisodeStatistic because stats recording is 
-        # triggered by the terminate / truncated status of the env.
-        assert isinstance(options, int)
-        self.timesteps = options    
+        super().reset(seed=seed)
 
         # set the true and intial q-values of the bandit.actions bandit arms
         self.arms_true_q_values = self.rng.normal(
@@ -102,6 +97,10 @@ class BanditEnv(gym.Env, BanditParams):
             size=self.bandit_actions)
         
         self.arms_q_values = self.arms_true_q_values
+
+        # reinit Variables to store and communicate the agents efficiency
+        self.step_error = 0.
+        self.optimal_action = False
 
         observation = self._get_obs()
         info = self._get_info()
@@ -120,18 +119,25 @@ class BanditEnv(gym.Env, BanditParams):
             for true_q in self.arms_true_q_values
         ])
 
-        # count down the remaining episode length
-        self.timesteps -= 1
-
-        observation = self._get_obs()
+        # # compute reward and further KPI
         reward = self.arms_q_values[action]
-        terminated = True if self.timesteps <= 0 else False  # Determine if the episode is terminated
-        truncated = False # Determine if the episode is truncated (e.g., due to a timeout)
+        max_val = np.max(self.arms_q_values)
+        self.step_error = max_val - reward
+        self.optimal_action = True if action in [i for i, q in enumerate(self.arms_q_values) if q == max_val] else False
+
+        # # compute reward and further KPI (this is revised by claude to improve performance over my version but actually runs slower...)
+        # reward = self.arms_q_values[action]
+        # max_val = np.max(self.arms_q_values)
+        # self.step_error = max_val - reward
+        # max_indices = np.where(self.arms_q_values == max_val)[0]
+        # self.optimal_action = action in max_indices
+
         info = self._get_info()  # Any additional information
 
         self._q_drift()
+        observation = self._get_obs()
 
-        return observation, reward, terminated, truncated, info
+        return observation, reward, False, False, info
     
     def render(self):
       # TODO implement render logic
@@ -158,7 +164,8 @@ class BanditEnv(gym.Env, BanditParams):
         return observation
     
     def _get_info(self):
-        return {}
+        info = {"step_error": self.step_error, "optimal_action": self.optimal_action}
+        return info
 
 
 if __name__ == '__main__':
