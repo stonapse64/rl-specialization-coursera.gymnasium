@@ -23,11 +23,11 @@ class BanditParams:
     def __init__(
         self,
         bandit_actions: int = 10,
-        true_q_value_mean = 0.5, # for a specific initial q-value set this to the value of choice otherwise use mean = 0
-        true_q_value_std = 0., # for a uniform initial q-value set this to zero otherwise use e.g., std = 1.
-        q_value_std = 0.1, # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
+        true_q_value_mean = 0., # for a specific initial q-value set this to the value of choice otherwise use mean = 0
+        true_q_value_std = 0.1, # for a uniform initial q-value set this to zero otherwise use e.g., std = 1.
+        q_value_std = 0., # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
         q_drift_mean: float = 0.0, # for a stationary problem set this to zero
-        q_drift_std: float = 0., # for a stationary problem set this to zero else use e.g. std = 0.1 for a light drift
+        q_drift_std: float = 0.01, # for a stationary problem set this to zero else use e.g. std = 0.1 for a light drift
         random_seed: int = None,
 
     ):
