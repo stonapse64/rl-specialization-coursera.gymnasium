@@ -18,8 +18,6 @@ class BanditAgent(BanditAgents):
         assert policy in self.agents
         self.policy = policy
 
-        self.training_error = []
-
     def get_action(self) -> int:
         """
         Returns the best action with probability (1 - epsilon)
@@ -31,5 +29,4 @@ class BanditAgent(BanditAgents):
             pass
     
     def update(self, reward):
-        optimal_reward = max(self.env.get_wrapper_attr("arms_true_q_values"))
-        self.training_error.append(optimal_reward - reward)
+        pass

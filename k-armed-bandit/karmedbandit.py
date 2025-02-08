@@ -121,16 +121,7 @@ class BanditEnv(gym.Env, BanditParams):
 
         # # compute reward and further KPI
         reward = self.arms_q_values[action]
-        max_val = np.max(self.arms_q_values)
-        self.step_error = max_val - reward
-        self.optimal_action = True if action in [i for i, q in enumerate(self.arms_q_values) if q == max_val] else False
-
-        # # compute reward and further KPI (this is revised by claude to improve performance over my version but actually runs slower...)
-        # reward = self.arms_q_values[action]
-        # max_val = np.max(self.arms_q_values)
-        # self.step_error = max_val - reward
-        # max_indices = np.where(self.arms_q_values == max_val)[0]
-        # self.optimal_action = action in max_indices
+        self._compute_KPI(action, reward)
 
         info = self._get_info()  # Any additional information
 
@@ -158,6 +149,20 @@ class BanditEnv(gym.Env, BanditParams):
         # exemplary code from old bandit class
         increments = self.rng.normal(loc=self.q_drift_mean, scale=self.q_drift_std, size=self.bandit_actions)
         self.arms_true_q_values += increments
+    
+    def _compute_KPI(self, action, reward):
+        max_val = np.max(self.arms_q_values)
+        self.step_error = max_val - reward
+        self.optimal_action = True if action in [i for i, q in enumerate(self.arms_q_values) if q == max_val] else False
+
+        # # compute reward and further KPI (this is revised by claude to improve performance over my version but actually runs slower...)
+        # reward = self.arms_q_values[action]
+        # max_val = np.max(self.arms_q_values)
+        # self.step_error = max_val - reward
+        # max_indices = np.where(self.arms_q_values == max_val)[0]
+        # self.optimal_action = action in max_indices
+
+        return
 
     def _get_obs(self):
         observation = self.arms_q_values
