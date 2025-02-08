@@ -6,27 +6,23 @@ import gymnasium as gym
 import numpy as np
 
 
-class BanditAgents:
-    def __init__(self):
-        self.agents = ["random", "greedy", "epsilon-greedy"]
-
-
-class BanditAgent(BanditAgents):
-    def __init__(self, env: gym.Env, policy: str):
+# TODO create the epsilon greedy agent
+class BanditAgentEpsilonGreedy():
+    def __init__(self, env: gym.Env, epsilon: float = 0.1):
         super().__init__()
         self.env = env
-        assert policy in self.agents
-        self.policy = policy
+        assert 0 <= epsilon <= 1
+        self.epsilon = epsilon
 
     def get_action(self) -> int:
-        """
-        Returns the best action with probability (1 - epsilon)
-        otherwise a random action with probability epsilon to ensure exploration.
-        """
-        if self.policy == "random":
-            return self.env.action_space.sample()
+        if random.random() < self.epsilon:
+            action = self.env.action_space.sample()
         else:
-            pass
+            _max_val = max(self.q_table[self.DIM_Q])
+            action = np.random.choice([i for i, q in enumerate(self.q_table[self.DIM_Q]) if q == _max_val])
+
+        return action
     
     def update(self, reward):
-        pass
+         self.update_q_table(self.reward)
+
