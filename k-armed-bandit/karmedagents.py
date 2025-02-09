@@ -5,71 +5,14 @@ import gymnasium as gym
 import numpy as np
 import random
 
-
 # # TODO replace random.random() with the use of the numpy.generator
 # # TODO create a q_table that logs the expected q-value of each arm and the times it has been used. 
 # # TODO correct the statement accordingly
 # # TODO adapt the function update to update the q-table. We consider the last reward the observation so we want to call self.update before drawing the next action in get_action > else
 # # TODO create a function self.reset to reset the agent to its state right after __init__
+
+
 class BanditAgentEpsilonGreedy:
-    def __init__(self, env: gym.Env, epsilon: float = 0.1):
-        super().__init__()
-        self.env = env
-        assert 0 <= epsilon <= 1
-        self.epsilon = epsilon
-        self.last_reward = 0
-        self.q_table = np.full(self.env.action_space.n, self.start_value)
-        self.visit_count = np.zeros(self.env.action_space.n)
-
-    def get_action(self) -> int:
-        if random.random() < self.epsilon:
-            action = self.env.action_space.sample()
-        else:
-            _max_val = max(self.q_table[self.DIM_Q])
-            action = np.random.choice([i for i, q in enumerate(self.q_table[self.DIM_Q]) if q == _max_val])
-
-        return action
-    
-    def update(self, reward):
-         pass
-
-import gymnasium as gym
-import numpy as np
-
-class BanditAgentEpsilonGreedyClaude:
-    def __init__(self, env: gym.Env, epsilon: float = 0.1, start_value: float = 0.0, seed: int = None):
-        super().__init__()
-        self.env = env
-        assert 0 <= epsilon <= 1
-        self.epsilon = epsilon
-        self.start_value = start_value
-        self.last_reward = 0
-        self.q_table = np.full(self.env.action_space.n, self.start_value)
-        self.visit_count = np.zeros(self.env.action_space.n)
-        self.rng = np.random.Generator(np.random.PCG64(seed=seed))
-        self.last_action = self.get_action()
-
-    def get_action(self) -> int:
-        if self.rng.uniform() < self.epsilon:
-            action = self.env.action_space.sample()
-        else:
-            action = np.argmax(self.q_table)
-        self.last_action = action
-        return action
-
-    def update(self, reward):
-        self.last_reward = reward
-        self.visit_count[self.last_action] += 1
-        self.q_table[self.last_action] += (reward - self.q_table[self.last_action]) / self.visit_count[self.last_action]
-
-    def reset(self):
-        self.q_table = np.full(self.env.action_space.n, self.start_value)
-        self.visit_count = np.zeros(self.env.action_space.n)
-        self.last_reward = 0
-        self.last_action = self.get_action()
-
-
-class BanditAgentEpsilonGreedyOptimized:
     def __init__(self, env: gym.Env, epsilon: float = 0.1, start_value: float = 0.0, seed: int = None):
         super().__init__()
         self.env = env

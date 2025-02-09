@@ -23,9 +23,9 @@ class BanditParams:
     def __init__(
         self,
         bandit_actions: int = 10,
-        true_q_value_mean = 0., # for a specific initial q-value set this to the value of choice otherwise use mean = 0
-        true_q_value_std = 0.1, # for a uniform initial q-value set this to zero otherwise use e.g., std = 1.
-        q_value_std = 0., # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
+        true_q_value_mean: float = 0., # for a specific initial q-value set this to the value of choice otherwise use mean = 0
+        true_q_value_std: float = 0.1, # for a uniform initial q-value set this to zero otherwise use e.g., std = 1.
+        q_value_std: float = 0., # for q_values drawn from a normal standard distribution set this to 1 else leave it to 0. The true_q_value_mean of each will be used as mean in any case which will be drifting if set so in the next two params.
         q_drift_mean: float = 0.0, # for a stationary problem set this to zero
         q_drift_std: float = 0.01, # for a stationary problem set this to zero else use e.g. std = 0.1 for a light drift
         random_seed: int = None,
@@ -52,8 +52,29 @@ class BanditEnv(gym.Env, BanditParams):
 
     metadata = {"render_modes": ["human"], "render_fps": 4}
     
-    def __init__(self, render_mode=None):
+    def __init__(self, bandit_config:dict, render_mode=None):
         super().__init__()
+
+        def __init__(self, bandit_config: dict, render_mode=None):
+            # Ingest configuration and perform type checks for the parameters
+            # May seem a bit quirky but the reason is I want to harmonize the 
+            # ingest method across BanditEnv, bandit agents and bandit 
+            # experiment. Especially for the bandit agents in combination with 
+            # the futures multi-core set-up I need the dict approach to 
+            # instantiate a cluster of agents with one dict.
+            try:
+                for key, value in bandit_config.items(): self.__setattr__(key, value)
+                assert isinstance(self.bandit_actions, int) and self.bandit_actions > 0, f"bandit_actions must be an integer greater than 0, got {type(self.bandit_actions)} with value {self.bandit_actions}"
+                assert isinstance(self.true_q_value_mean, (int, float)), f"true_q_value_mean must be a number, got {type(self.true_q_value_mean)}"
+                assert isinstance(self.true_q_value_std, (int, float)), f"true_q_value_std must be a number, got {type(self.true_q_value_std)}"
+                assert isinstance(self.q_value_std, (int, float)), f"q_value_std must be a number, got {type(self.q_value_std)}"
+                assert isinstance(self.q_drift_mean, (int, float)), f"q_drift_mean must be a number, got {type(self.q_drift_mean)}"
+                assert isinstance(self.q_drift_std, (int, float)), f"q_drift_std must be a number, got {type(self.q_drift_std)}"
+                assert isinstance(self.random_seed, (int, type(None))), f"random_seed must be an integer or None, got {type(self.random_seed)}"
+            except (AttributeError, AssertionError) as e:
+                raise ValueError(f"Invalid BanditEnv configuration: {e}")
+
+            self.render_mode = render_mode
 
         # Create an instance of the numpy random generator so that we can seed
         # it for the use in this class without side effects to other parts of 
@@ -86,10 +107,10 @@ class BanditEnv(gym.Env, BanditParams):
         self.window = None
         self.clock = None
 
-    def reset(self, seed=None, options=None):
-        self.rng = np.random.default_rng(seed=self.random_seed)
+    def reset(self, seed=None, options=None):  
+        # TODO address the checkenv issue regarding non deterministic env for a given seed      
         super().reset(seed=seed)
-
+        self.rng = np.random.default_rng(seed=self.random_seed)
         # set the true and intial q-values of the bandit.actions bandit arms
         self.arms_true_q_values = self.rng.normal(
             loc=self.true_q_value_mean, 
@@ -112,6 +133,8 @@ class BanditEnv(gym.Env, BanditParams):
     
     def step(self, action):
         assert action in self.action_space
+
+        # rng = np.random.default_rng(seed=self.rng.bit_generator.state['state']['state'])
 
         # compute step arms_q_values based on bandit's configuration
         self.arms_q_values = np.array([
@@ -146,7 +169,6 @@ class BanditEnv(gym.Env, BanditParams):
         """
         Updates the bandit with drift for a non-stationary problem.
         """
-        # exemplary code from old bandit class
         increments = self.rng.normal(loc=self.q_drift_mean, scale=self.q_drift_std, size=self.bandit_actions)
         self.arms_true_q_values += increments
     
@@ -197,8 +219,3 @@ if __name__ == '__main__':
     # print("Updated arms_q_values:", np.round(env.arms_q_values, 3))
 
     env.close()
-
-
-
-
-

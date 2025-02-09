@@ -13,11 +13,13 @@ import numpy as np
 from tqdm import trange
 # import local libs
 # TODO refactor
-from mab_bandit import Bandit
-from mab_player import Player
+# from mab_bandit import Bandit
+import karmedbandit
+# from mab_player import Player
+import karmedagents
 
 
-class BanditCompetition:
+class BanditExperiment:
     """
     A class to represent an experiment for a multi-armed bandit problem.
 
