@@ -184,17 +184,17 @@ if __name__ == '__main__':
     
     # XXX info: gymnasium env self test. Run as required.
     # The output in the terminal will indicate whether tests passed or failed.
-    # check_env(env = env)
+    check_env(env = env)
 
-    print(env.true_q_value_mean)
-    obs, info = env.reset()
-    print("Initial arms_q_values:", env.arms_true_q_values)
-    print ("#"*79)
-    for _ in range(10_000):  # Perform some steps
-        action = env.action_space.sample() #Example
-        obs, reward, terminated, truncated, info = env.step(action)
+    # print(env.true_q_value_mean)
+    # obs, info = env.reset()
+    # print("Initial arms_q_values:", env.arms_true_q_values)
+    # print ("#"*79)
+    # for _ in range(10_000):  # Perform some steps
+    #     action = env.action_space.sample() #Example
+    #     obs, reward, terminated, truncated, info = env.step(action)
     
-    print("Updated arms_q_values:", np.round(env.arms_q_values, 3))
+    # print("Updated arms_q_values:", np.round(env.arms_q_values, 3))
 
     env.close()
 
